@@ -1,10 +1,9 @@
 
 
-def ler_arquivo(path):
-
+def ler_arquivo(arquivo_texto):
     s=[]
     
-    with open(path, 'r') as file:
+    with open(arquivo_texto, 'r') as file:
         for r in file.readlines():
             s.append(r.replace('\n', ''))
 
@@ -16,112 +15,114 @@ def ler_arquivo(path):
     return gramatica
 
 
-def __gerar_lista(palavra, gramatica):
-    l = []
-    for letra in palavra:
-        l.append(letra)
+def gerar_matriz(palavra, gramatica):
+    matriz = []
+    linha = []
+    celula = []
+    for char in palavra:
+        for item in gramatica:
+            if char in gramatica[item]:
+                celula.append(item)
+        linha.append(celula)
+        celula = []
+    
+    if(len(linha) == len(palavra)):
+        matriz.append(linha)
 
-    lista =[]
-    lista.append(l)
-    nova_lista = []
+        tamanho_total = len(linha)
+        tamanho_linha = tamanho_total-1
 
-    for caracter in lista[0]:
-        for prod in gramatica:
-            if caracter in gramatica[prod]:
-                nova_lista.append(prod)
+        for i in range(tamanho_total-1):
+            linha = []
+            for j in range(tamanho_linha):
+                linha.append([])
+            tamanho_linha -= 1
+            matriz.append(linha)
 
-    if(len(nova_lista) < len(lista[0])):
-        return None
-    else:        
-        lista.append(nova_lista)
-        return lista  
+        #gerando a segunda linha da matriz
 
+        for i in range(len(matriz[1])):
+            for j in matriz[0][i]:
+                for k in matriz[0][i+1]:
+                    for y in gramatica:
+                        if j+k in gramatica[y]:
+                            matriz[1][i].append(y)
+                        
 
-def __gerar_matriz(palavra, gramatica):
-    matriz = __gerar_lista(palavra, gramatica)
-    if(matriz != None):
-        i = len(matriz[1])
-        while(i > 0):
-            nova_lista = []
-            for j in range(i-1):
-                nova_lista.append(" ")
-            if " " in nova_lista:
-                matriz.append(nova_lista)
-            i -= 1
         return matriz
     else:
-        return None
+        return None             
 
 
-def algoritmo_CYK(palavra, gramatica):
-    matriz = __gerar_matriz(palavra, gramatica)
+def Cyk(palavra, gramatica):
+    matriz = gerar_matriz(palavra, gramatica)
     if matriz != None:
-        for a in range(0, (len(matriz[1])-1), 1):
-            string_parcial = matriz[1][a]+matriz[1][a+1]
-            for i in gramatica:
-                if string_parcial in gramatica[i]:
-                    if matriz[2][a] == ' ':
-                        matriz[2][a] = i
-                    else:
-                        matriz[2][a] += i
-
+       
+        x_vertical = 1
+        y_vertical = 0
+        x_diagonal = 0
+        y_diagonal = 2
         x = 2
-        y = 1
-        for i in range(3,len(matriz)-1,1):
-            for j in range(len(matriz[i])-1):
-                for k in range(i-1):
-                    a = matriz[k+1][j]
-                    b = matriz[x][y]
-                    if a != ' ' and b != ' ':
-                        matriz[i][j] = __combinacoes(a, b, gramatica)
+        y = 0
+        vertical = matriz[x_vertical][y_vertical]
+        diagonal = matriz[x_diagonal][y_diagonal]
+        chegou_topo = False
 
-                    x -= 1
+        while(not(chegou_topo)):
+
+            for v in vertical:
+                for d in diagonal:
+                    for g in gramatica:
+                        concat = v+d
+                        if concat in gramatica[g]:
+                            matriz[x][y].append(g)  
+
+
+            if x_vertical == 0:
+                if x == len(matriz)-1:
+                    chegou_topo = True
+                    break
+                if y+1 < len(matriz[x]):
                     y += 1
-                x = i - 1
-                y = j + 2
-            x = i
-            y = 1
+                    x_vertical = x-1
+                    y_vertical = y
+                    x_diagonal = 0
+                    y_diagonal = y_vertical + x
+                else:
+                    x += 1
+                    y = 0
+                    x_vertical = x-1
+                    y_vertical = 0
+                    x_diagonal = 0
+                    y_diagonal = x
+            else:
+                x_vertical -= 1
+                x_diagonal += 1
+                y_diagonal -= 1
             
-        x = len(matriz) - 2
-        y = 1
-        vertical = 1
+            vertical = matriz[x_vertical][y_vertical]
+            diagonal = matriz[x_diagonal][y_diagonal]
 
-        while(vertical < len(matriz)-1):
-            if vertical == 3:
-                print(vertical)
-            a = matriz[vertical][0]
-            b = matriz[x][y]
-            if a != ' ' and b != ' ':
-                matriz[len(matriz)-1][0] = __combinacoes(a, b, gramatica)
-            vertical += 1
-            x -= 1
-            y += 1
-
-        if 'S' in matriz[len(matriz)-1]:
+        if 'S' in matriz[len(matriz)-1][0]:
+            for m in matriz:
+                print(m)
             return True
         else:
+            print("else interno")
+            for m in matriz:
+                print(m)
             return False
     else:
+        for m in matriz:
+            print(m)
         return False
 
-
-def __combinacoes(str1, str2, gramatica):
-    return_ = ' '
-    for i in str1:
-        for j in str2:
-            for k in gramatica:
-                if(i+j) in gramatica[k]:
-                    if return_ == ' ':
-                        return_ = k
-                    else:
-                        return_ += k
-    return return_
-
-    
 
 
 gram = ler_arquivo("gramatica.txt")
 
-print(algoritmo_CYK("aaabbb", gram))
+#print(productions)
+print(gram)
 
-
+resultado = Cyk('aaabbb', gram)
+print(resultado)
